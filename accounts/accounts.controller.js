@@ -35,11 +35,12 @@ router.post('/verify-email', verifyEmailSchema, verifyEmail);
 router.post('/forgot-password', forgotPasswordSchema, forgotPassword);
 router.post('/validate-reset-token', validateResetTokenSchema, validateResetToken);
 router.post('/reset-password', resetPasswordSchema, resetPassword);
-router.get('/', authorize(Role.Admin), getAll);
-router.get('/:id', authorize(), getById);
-router.post('/', authorize(Role.Admin), createSchema, create);
-router.put('/:id', authorize(), updateSchema, update);
-router.delete('/:id', authorize(), _delete);
+router.get('/', authorize([Role.Admin, Role.Vet, Role.Nurse]), getAll);
+router.get('/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), getById);
+router.get('/many/:ids', authorize([Role.Admin, Role.Vet, Role.Nurse]), getManyByIds);
+router.post('/', authorize([Role.Admin, Role.Vet]), createSchema, create);
+router.put('/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), updateSchema, update);
+router.delete('/:id', authorize([Role.Admin, Role.Vet]), _delete);
 
 module.exports = router;
 
@@ -195,16 +196,31 @@ function getById(req, res, next) {
         .catch(next);
 }
 
+function getManyByIds(req, res, next) {
+    // users can get their own account and admins can get any account
+
+    // TODO Check this .user.
+    if (req.params.id !== req.user.id && req.user.role !== Role.Admin) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const ids = req.params.ids.split(',');
+    // console.log('ids--> ', ids)
+
+    accountService.getManyByIds(ids)
+        .then(accounts => accounts ? res.json(accounts) : res.sendStatus(404))
+        .catch(next);
+}
+
 function createSchema(req, res, next) {
     const schema = Joi.object({
-        title: Joi.string().required(),
+        title: Joi.string(),
         firstName: Joi.string().required(),
         lastName: Joi.string().required(),
         email: Joi.string().email().required(),
         password: Joi.string().min(6).required(),
         confirmPassword: Joi.string().valid(Joi.ref('password')).required(),
-        role: Joi.string().valid(Role.Admin, Role.User).required(),
-        avatar: Joi.string(),
+        role: Joi.string().valid(Role.Admin, Role.Vet, Role.Nurse, Role.User).required(),
+        avatar: Joi.string().allow(null, ''),
         telephone: Joi.string(),
         cellphone: Joi.string(),
         street: Joi.string(),
@@ -219,7 +235,7 @@ function createSchema(req, res, next) {
 
 function create(req, res, next) {
     accountService.create(req.body)
-        .then(account => res.json(account))
+        .then(accountId => res.json(accountId))
         .catch(next);
 }
 
@@ -231,8 +247,8 @@ function updateSchema(req, res, next) {
         email: Joi.string().email().empty(''),
         password: Joi.string().min(6).empty(''),
         confirmPassword: Joi.string().valid(Joi.ref('password')).empty(''),
-        role: Joi.string().valid(Role.Admin, Role.User).required(),
-        avatar: Joi.string(),
+        role: Joi.string().valid(Role.Admin, Role.Vet, Role.Nurse, Role.User).required(),
+        avatar: Joi.string().allow(null, ''),
         telephone: Joi.string(),
         cellphone: Joi.string(),
         street: Joi.string(),
@@ -245,7 +261,7 @@ function updateSchema(req, res, next) {
 
     // only admins can update role
     if (req.user.role === Role.Admin) {
-        schemaRules.role = Joi.string().valid(Role.Admin, Role.User).empty('');
+        schemaRules.role = Joi.string().valid(Role.Admin, Role.Vet, Role.Nurse, Role.User).empty('');
     }
 
     const schema = Joi.object(schemaRules).with('password', 'confirmPassword');
@@ -258,7 +274,7 @@ function update(req, res, next) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    accountService.update(req.params.id, req.body)
+    accountService.update(req.params.id, req.body.changes)
         .then(account => res.json(account))
         .catch(next);
 }
@@ -270,7 +286,7 @@ function _delete(req, res, next) {
     }
 
     accountService.delete(req.params.id)
-        .then(() => res.json({ message: 'Account deleted successfully' }))
+        .then(() => res.status(204).send())
         .catch(next);
 }
 

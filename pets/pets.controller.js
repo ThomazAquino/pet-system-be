@@ -11,12 +11,17 @@ const petsService = require('./pets.service');
 // routes
 // router.post('/register', registerSchema, register);
 //router.get('/', authorize(Role.Admin), getAll);
-router.get('/', getAll);
-router.get('/:id', authorize(), getById);
+router.get('/', authorize([Role.Admin, Role.Vet, Role.Nurse]), getAll);
+router.get('/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), getById);
+router.get('/many/:ids', authorize([Role.Admin, Role.Vet, Role.Nurse]), getManyByIds);
 router.post('/', createSchema, create);
 // router.post('/', authorize(Role.Admin), createSchema, create);
-router.put('/:id', authorize(), updateSchema, update);
-router.delete('/:id', authorize(), _delete);
+router.put('/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), updateSchema, update);
+router.delete('/:id', authorize(), deletePetAndRemoveFromUser);
+
+
+// test
+router.post('/test', test);
 
 module.exports = router;
 
@@ -60,9 +65,25 @@ function getById(req, res, next) {
         .catch(next);
 }
 
+function getManyByIds(req, res, next) {
+    // users can get their own account and admins can get any account
+
+    // TODO Check this .user.
+    if (req.params.id !== req.user.id && req.user.role !== Role.Admin) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const ids = req.params.ids.split(',');
+
+    console.log('--->', ids)
+
+    petsService.getManyByIds(ids)
+        .then(pets => pets ? res.json(pets) : res.sendStatus(404))
+        .catch(next);
+}
+
 function createSchema(req, res, next) {
     const schema = Joi.object({
-        avatar: Joi.string(),
+        avatar: Joi.string().allow(null, ''),
         name: Joi.string().required(),
         type: Joi.string().required(),
         breed: Joi.string().required(),
@@ -77,33 +98,25 @@ function createSchema(req, res, next) {
 
 function create(req, res, next) {
     petsService.create(req.body)
-        .then(pets => res.json(pets))
+        .then(petId => res.json(petId))
         .catch(next);
 }
 
 function updateSchema(req, res, next) {
     const schemaRules = {
-        avatar: Joi.string(),
-        name: Joi.string().required(),
-        type: Joi.string().required(),
-        breed: Joi.string().email().required(),
+        avatar: Joi.string().allow(null, ''),
+        name: Joi.string(),
+        type: Joi.string(),
+        breed: Joi.string(),
         color: Joi.string(),
         status: Joi.string(),
         tutorId: Joi.string(),
         treatments: Joi.array().items(Joi.string()),
         qrCode: Joi.string()
     };
-
-    // only admins can update role
-
-    // TODO: change to pets?
-    if (req.user.role === Role.Admin) {
-        schemaRules.role = Joi.string().valid(Role.Admin, Role.User).empty('');
-    }
-
-    const schema = Joi.object(schemaRules).with('password', 'confirmPassword');
+    const schema = Joi.object(schemaRules)
     validateRequest(req, next, schema);
-}
+}   
 
 function update(req, res, next) {
     // users can update their own account and admins can update any account
@@ -112,19 +125,25 @@ function update(req, res, next) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    petsService.update(req.params.id, req.body)
-        .then(account => res.json(account))
+    petsService.update(req.params.id, req.body.changes)
+        .then(petId => res.json(petId))
         .catch(next);
 }
 
-function _delete(req, res, next) {
+function deletePetAndRemoveFromUser(req, res, next) {
     // TODO: check this .user.
     // users can delete their own account and admins can delete any account
     if (req.params.id !== req.user.id && req.user.role !== Role.Admin) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    petsService.delete(req.params.id)
-        .then(() => res.json({ message: 'Account deleted successfully' }))
+    petsService.deletePetAndRemoveFromUser(req.params.id)
+        .then(() => res.status(204).send())
+        .catch(next);
+}
+
+function test(req, res, next) {
+    petsService.test(req.body)
+        .then(petId => res.json(petId))
         .catch(next);
 }

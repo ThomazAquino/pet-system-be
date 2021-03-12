@@ -9,7 +9,7 @@ const schema = new Schema({
     color: { type: String, required: true },
     status: { type: String, required: false },
     tutorId: { type: Schema.Types.ObjectId, ref: 'Account' },
-    treatments: { type: Array, required: false, "default" : [] },
+    treatments: [{ type: Schema.Types.ObjectId, ref: 'Treatment' }],
     qrCode: { type: String, required: false },
 });
 
@@ -23,4 +23,4 @@ schema.set('toJSON', {
     }
 });
 
-module.exports = mongoose.model('Pets', schema);
+module.exports = mongoose.model('Pet', schema);

@@ -7,12 +7,13 @@ const connectionOptions = {
     useFindAndModify: false
 };
 
-mongoose.connect(process.env.MONGODB_URI || config.connectionString, connectionOptions);
+mongoose.connect('mongodb://localhost/node-mongo-signup-verification-api');
 mongoose.Promise = global.Promise;
 
 module.exports = {
     Pets: require('pets/pets.model'),
     Account: require('accounts/account.model'),
+    Treatments: require('treatments/treatments.model'),
     RefreshToken: require('accounts/refresh-token.model'),
     isValidId
 };

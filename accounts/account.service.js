@@ -17,10 +17,16 @@ module.exports = {
     resetPassword,
     getAll,
     getById,
+    getManyByIds,
     create,
     update,
+    addPetToUser,
+    removePetToUser,
     delete: _delete
 };
+
+const petService = require('../pets/pets.service');
+
 
 async function authenticate({ email, password, ipAddress }) {
     const account = await db.Account.findOne({ email });
@@ -162,7 +168,23 @@ async function getById(id) {
     return basicDetails(account);
 }
 
+async function getManyByIds(ids) {
+    const accounts = await getAccounts(ids);
+    // console.log('after', accounts);
+
+    if (accounts && accounts.length > 0) {
+        const response = accounts.map(account => basicDetails(account))
+        // console.log(response)
+        return response;
+    
+    }
+}
+
 async function create(params) {
+
+    if (!params.role) {
+        params.role = 'User';
+    }
     // validate
     if (await db.Account.findOne({ email: params.email })) {
         throw 'Email "' + params.email + '" is already registered';
@@ -177,7 +199,7 @@ async function create(params) {
     // save account
     await account.save();
 
-    return basicDetails(account);
+    return account.id;
 }
 
 async function update(id, params) {
@@ -198,12 +220,58 @@ async function update(id, params) {
     account.updated = Date.now();
     await account.save();
 
+    let changes = {};
+    Object.keys(params).map(param => {
+        changes[param] = account[param];
+    });
+
+    return {
+        id: account.id,
+        changes: changes
+    };
+}
+
+async function addPetToUser(userId, petId) {
+    const account = await getAccount(userId);
+
+    // copy params to account and save
+    Object.assign(account, petId);
+    account.pets = [...account.pets, petId];
+    await account.save();
+
     return basicDetails(account);
+}
+
+async function removePetToUser(userId, petId) {
+    const account = await getAccount(userId);
+
+    await db.Account.update( 
+        {_id: userId}, 
+        { $pull: {pets: petId } } 
+    )
+    .then( (err, result) => {
+        if (err) {
+            console.error(err);
+        }
+        console.log('Pet removed from user success --> ', result);
+    });
 }
 
 async function _delete(id) {
     const account = await getAccount(id);
+
+    if (account.pets.length > 0) {
+        let petIds = [];
+        account.pets.forEach(pet => {
+            petIds.push(pet._id.toString());
+        });
+
+        await petService.deleteManyPets(petIds);
+    }
+
     await account.remove();
+
+    console.log('Success, account removed')
 }
 
 // helper functions
@@ -213,6 +281,15 @@ async function getAccount(id) {
     const account = await db.Account.findById(id);
     if (!account) throw 'Account not found';
     return account;
+}
+
+async function getAccounts(ids) {
+    const validIds = ids.filter(id => db.isValidId(id));
+    const accounts = await db.Account.find().where('_id').in(validIds).exec();
+    
+    // const account = await db.Account.findById(id);
+    if (!accounts) throw 'Account not found';
+    return accounts;
 }
 
 async function getRefreshToken(token) {
@@ -246,6 +323,7 @@ function randomTokenString() {
 
 function basicDetails(account) {
     // different based on account.type or account.role
+
     const { id, firstName, lastName, email, telephone, cellphone, street, streetNumber, postalCode,
             birthday, cpf, pets, role, created, updated, isVerified } = account;
     return { id, firstName, lastName, email, telephone, cellphone, street, streetNumber, postalCode,
@@ -255,7 +333,7 @@ function basicDetails(account) {
 async function sendVerificationEmail(account, origin) {
     let message;
     if (origin) {
-        const verifyUrl = `${origin}/account/verify-email?token=${account.verificationToken}`;
+        const verifyUrl = `${origin}/#auth/verify-email?token=${account.verificationToken}`;
         message = `<p>Please click the below link to verify your email address:</p>
                    <p><a href="${verifyUrl}">${verifyUrl}</a></p>`;
     } else {
