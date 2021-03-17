@@ -7,6 +7,11 @@ const connectionOptions = {
     useFindAndModify: false
 };
 
+mongoose.set('useNewUrlParser', true);
+mongoose.set('useFindAndModify', false);
+mongoose.set('useCreateIndex', true);
+mongoose.set('useUnifiedTopology', true);
+
 mongoose.connect('mongodb://localhost/node-mongo-signup-verification-api');
 mongoose.Promise = global.Promise;
 

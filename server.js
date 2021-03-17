@@ -1,10 +1,13 @@
-﻿require('rootpath')();
+﻿require("dotenv").config();
+require('rootpath')(); 
 const express = require('express');
-const app = express();
+const app = express(); 
 const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
-const cors = require('cors');
+const cookieParser = require('cookie-parser'); 
+const cors = require('cors'); 
 const errorHandler = require('_middleware/error-handler');
+const morgan = require("morgan"); 
+const path = require("path"); 
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -13,6 +16,9 @@ app.use(cookieParser());
 // allow cors requests from any origin and with credentials
 app.use(cors({ origin: (origin, callback) => callback(null, true), credentials: true }));
 
+// Logger
+app.use(morgan("dev"));
+
 // api routes
 app.use('/accounts', require('./accounts/accounts.controller'));
 app.use('/pets', require('./pets/pets.controller'));
@@ -20,6 +26,18 @@ app.use('/treatments', require('./treatments/treatments.controller'));
 
 // swagger docs route
 app.use('/api-docs', require('_helpers/swagger'));
+
+// app.use('/images', express.static(__dirname + '/images'));
+
+app.use(
+    '/images',
+    express.static(path.resolve(__dirname, "images"))
+);
+app.use(
+    '/chat',
+    express.static(path.resolve(__dirname, "chat"))
+);
+
 
 // global error handler
 app.use(errorHandler);

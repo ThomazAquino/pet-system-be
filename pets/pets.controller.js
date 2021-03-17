@@ -6,6 +6,8 @@ const authorize = require('_middleware/authorize')
 const Role = require('_helpers/role');
 const petsService = require('./pets.service');
 
+const multer = require("multer");
+const multerConfig = require("../_middleware/multer.config");
 
 
 // routes
@@ -23,6 +25,11 @@ router.delete('/:id', authorize(), deletePetAndRemoveFromUser);
 // test
 router.post('/test', test);
 
+router.post("/post", multer(multerConfig).single("file"), async (req, res) => {
+    //const { originalname: name, size, key, location: url = "" } = req.file;
+
+    return res.json(req.file);
+  });
 module.exports = router;
 
 // function registerSchema(req, res, next) {
