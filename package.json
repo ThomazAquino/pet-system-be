@@ -29,10 +29,12 @@
         "multer-s3": "^2.9.0",
         "nodemailer": "^6.4.6",
         "rootpath": "^0.1.2",
+        "socket.io": "^4.0.0",
         "swagger-ui-express": "^4.1.4",
         "yamljs": "^0.3.0"
     },
     "devDependencies": {
+        "@types/socket.io": "^2.1.13",
         "nodemon": "^2.0.3"
     }
 }
