@@ -20,6 +20,8 @@ module.exports = {
     Account: require('accounts/account.model'),
     Treatments: require('treatments/treatments.model'),
     RefreshToken: require('accounts/refresh-token.model'),
+    ChatHistory: require('chat/chat-history.model'),
+    ChatConversation: require('chat/chat-conversation.model'),
     isValidId
 };
 
