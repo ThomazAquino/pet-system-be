@@ -38,7 +38,27 @@ const storageTypes = {
   // }),
 };
 
-module.exports = {
+async function uploadSingleImage(req, fileKey) {
+  console.log(fileKey)
+  const upload = multer(config).single(fileKey);
+  return new Promise((resolve, reject) => {
+      upload(req, null, function(err) {    
+        console.log('calll', req.body)
+          if (req.file) {
+              fileName = req.file.filename;
+              resolve(req.file.filename);
+          }
+          else if (err instanceof multer.MulterError) {
+              reject(err);
+          }
+          else if (err) {
+            reject(err);
+          }
+      });
+  });
+
+}
+const config = {
   dest: path.resolve(__dirname, "..", "images"),
   storage: storageTypes[process.env.STORAGE_TYPE],
   limits: {
@@ -58,4 +78,9 @@ module.exports = {
       cb(new Error("Invalid file type."));
     }
   },
+}
+
+module.exports = {
+  uploadSingleImage,
+  config
 };

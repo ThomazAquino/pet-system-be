@@ -234,6 +234,16 @@ function createSchema(req, res, next) {
 }
 
 function create(req, res, next) {
+
+    // console.log('1', req.body);
+
+    // if (req.body.avatar) {
+    //     fileUploader.uploadSingleImage(req, 'avatar')
+    //     .then(imageName => req.body.avatar = imageName)
+    //     .catch(err => { console.log(err) });
+    // }
+
+    // console.log('2', req.body.avatar);
     accountService.create(req.body)
         .then(accountId => res.json(accountId))
         .catch(next);

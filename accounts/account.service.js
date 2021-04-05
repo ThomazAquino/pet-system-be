@@ -26,6 +26,7 @@ module.exports = {
 };
 
 const petService = require('../pets/pets.service');
+const fileUploader = require("../_middleware/multer.config");
 
 
 async function authenticate({ email, password, ipAddress }) {
