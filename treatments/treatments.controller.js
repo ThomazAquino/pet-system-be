@@ -20,7 +20,7 @@ router.put('/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), updateSchema, 
 router.put('/close/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), close);
 
 
-router.delete('/:id', authorize(), _delete);
+router.delete('/:id', authorize([Role.Admin]), _delete);
 
 module.exports = router;
 
@@ -32,26 +32,12 @@ function getAll(req, res, next) {
 }
 
 function getById(req, res, next) {
-    // users can get their own account and admins can get any account
-
-    // TODO Check this .user.
-    if (req.params.id !== req.user.id && req.user.role !== Role.Admin) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
-
     treatmentsService.getById(req.params.id)
         .then(treatment => treatment ? res.json(treatment) : res.sendStatus(404))
         .catch(next);
 }
 
 function getManyByIds(req, res, next) {
-    // users can get their own account and admins can get any account
-
-    // TODO Check this .user.
-    if (req.params.id !== req.user.id && req.user.role !== Role.Admin) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
-
     const ids = req.params.ids.split(',');
 
     treatmentsService.getManyByIds(ids)
@@ -145,12 +131,6 @@ function close(req, res, next) {
 }
 
 function _delete(req, res, next) {
-    // TODO: check this .user.
-    // users can delete their own account and admins can delete any account
-    if (req.params.id !== req.user.id && req.user.role !== Role.Admin) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
-
     treatmentsService.delete(req.params.id)
         .then((treatmentAndPet) => res.json({
             message: 'Treatment deleted successfully',

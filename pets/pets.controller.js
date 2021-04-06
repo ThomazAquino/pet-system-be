@@ -15,10 +15,10 @@ const multerConfig = require("../_middleware/multer.config");
 router.get('/', authorize([Role.Admin, Role.Vet, Role.Nurse]), getAll);
 router.get('/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), getById);
 router.get('/many/:ids', authorize([Role.Admin, Role.Vet, Role.Nurse]), getManyByIds);
-router.post('/', createSchema, create);
+router.post('/', authorize([Role.Admin, Role.Vet, Role.Nurse]), createSchema, create);
 // router.post('/', authorize(Role.Admin), createSchema, create);
 router.put('/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), updateSchema, update);
-router.delete('/:id', authorize(), deletePetAndRemoveFromUser);
+router.delete('/:id', authorize([Role.Admin]), deletePetAndRemoveFromUser);
 
 
 // test
@@ -70,25 +70,12 @@ function getAll(req, res, next) {
 }
 
 function getById(req, res, next) {
-    // users can get their own account and admins can get any account
-
-    // TODO Check this .user.
-    if (req.params.id !== req.user.id && req.user.role !== Role.Admin) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
-
     petsService.getById(req.params.id)
         .then(pet => pet ? res.json(pet) : res.sendStatus(404))
         .catch(next);
 }
 
 function getManyByIds(req, res, next) {
-    // users can get their own account and admins can get any account
-
-    // TODO Check this .user.
-    if (req.params.id !== req.user.id && req.user.role !== Role.Admin) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
     const ids = req.params.ids.split(',');
 
     console.log('--->', ids)
@@ -136,24 +123,12 @@ function updateSchema(req, res, next) {
 }   
 
 function update(req, res, next) {
-    // users can update their own account and admins can update any account
-    // TODO: check this .user.
-    if (req.params.id !== req.user.id && req.user.role !== Role.Admin) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
-
     petsService.update(req.params.id, req.body.changes)
         .then(petId => res.json(petId))
         .catch(next);
 }
 
 function deletePetAndRemoveFromUser(req, res, next) {
-    // TODO: check this .user.
-    // users can delete their own account and admins can delete any account
-    if (req.params.id !== req.user.id && req.user.role !== Role.Admin) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
-
     petsService.deletePetAndRemoveFromUser(req.params.id)
         .then(() => res.status(204).send())
         .catch(next);

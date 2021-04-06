@@ -40,7 +40,7 @@ router.get('/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), getById);
 router.get('/many/:ids', authorize([Role.Admin, Role.Vet, Role.Nurse]), getManyByIds);
 router.post('/', authorize([Role.Admin, Role.Vet]), createSchema, create);
 router.put('/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), updateSchema, update);
-router.delete('/:id', authorize([Role.Admin, Role.Vet]), _delete);
+router.delete('/:id', authorize([Role.Admin]), _delete);
 
 module.exports = router;
 
@@ -187,7 +187,7 @@ function getAll(req, res, next) {
 
 function getById(req, res, next) {
     // users can get their own account and admins can get any account
-    if (req.params.id !== req.user.id && req.user.role !== Role.Admin) {
+    if (req.params.id !== req.user.id && req.user.role === Role.User) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
 
@@ -200,7 +200,7 @@ function getManyByIds(req, res, next) {
     // users can get their own account and admins can get any account
 
     // TODO Check this .user.
-    if (req.params.id !== req.user.id && req.user.role !== Role.Admin) {
+    if (req.params.id !== req.user.id && req.user.role === Role.User) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
     const ids = req.params.ids.split(',');
@@ -280,7 +280,7 @@ function updateSchema(req, res, next) {
 
 function update(req, res, next) {
     // users can update their own account and admins can update any account
-    if (req.params.id !== req.user.id && req.user.role !== Role.Admin) {
+    if (req.params.id !== req.user.id && req.user.role === Role.User) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
 
@@ -291,7 +291,7 @@ function update(req, res, next) {
 
 function _delete(req, res, next) {
     // users can delete their own account and admins can delete any account
-    if (req.params.id !== req.user.id && req.user.role !== Role.Admin) {
+    if (req.params.id !== req.user.id && req.user.role === Role.User) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
 
