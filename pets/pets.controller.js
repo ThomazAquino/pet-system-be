@@ -5,7 +5,7 @@ const validateRequest = require('_middleware/validate-request');
 const authorize = require('_middleware/authorize')
 const Role = require('_helpers/role');
 const petsService = require('./pets.service');
-
+const multer = require("multer");
 const multerConfig = require("../_middleware/multer.config");
 
 
@@ -15,20 +15,22 @@ const multerConfig = require("../_middleware/multer.config");
 router.get('/', authorize([Role.Admin, Role.Vet, Role.Nurse]), getAll);
 router.get('/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), getById);
 router.get('/many/:ids', authorize([Role.Admin, Role.Vet, Role.Nurse]), getManyByIds);
-router.post('/', authorize([Role.Admin, Role.Vet, Role.Nurse]), createSchema, create);
+router.post('/', authorize([Role.Admin, Role.Vet, Role.Nurse]), multer(multerConfig.config).single("avatar"), createSchema, create);
 // router.post('/', authorize(Role.Admin), createSchema, create);
-router.put('/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), updateSchema, update);
+router.put('/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), multer(multerConfig.config).single("avatar"), updateSchema, update);
 router.delete('/:id', authorize([Role.Admin]), deletePetAndRemoveFromUser);
 
 
 // test
 router.post('/test', test);
 
-// router.post("/post", multer(multerConfig).single("file"), async (req, res) => {
-//     //const { originalname: name, size, key, location: url = "" } = req.file;
+router.post("/post", multer(multerConfig.config).single("avatar"), async (req, res) => {
+    console.log(req.file);
+    // console.log(req.body);
+    
 
-//     return res.json(req.file);
-//   });
+    return res.json(req.file.filename);
+  });
 
 // router.post("/post" , async (req, res) => {
 
@@ -86,6 +88,11 @@ function getManyByIds(req, res, next) {
 }
 
 function createSchema(req, res, next) {
+    // ForData cannot send arrays.
+    if (typeof(req.body.treatments) === "string") {
+        req.body.treatments = JSON.parse(req.body.treatments);
+    }
+
     const schema = Joi.object({
         avatar: Joi.string().allow(null, ''),
         name: Joi.string().required(),
@@ -101,8 +108,13 @@ function createSchema(req, res, next) {
 }
 
 function create(req, res, next) {
+    // Case a image was uploaded.
+    if (req.file && req.file.filename) {
+        req.body.avatar = req.file.filename;
+    }
+
     petsService.create(req.body)
-        .then(petId => res.json(petId))
+        .then(petIdAndAvatarPath => res.json(petIdAndAvatarPath))
         .catch(next);
 }
 
@@ -123,8 +135,15 @@ function updateSchema(req, res, next) {
 }   
 
 function update(req, res, next) {
-    petsService.update(req.params.id, req.body.changes)
-        .then(petId => res.json(petId))
+    // Case a image was uploaded.
+    if (req.file && req.file.filename) {
+        req.body.avatar = req.file.filename;
+    }
+
+    console.log('--> ', req.body.avatar)
+
+    petsService.update(req.params.id, req.body)
+        .then(response => res.json(response))
         .catch(next);
 }
 

@@ -200,7 +200,7 @@ async function create(params) {
     // save account
     await account.save();
 
-    return account.id;
+    return {id: account.id, avatar: account.avatar || ''};
 }
 
 async function update(id, params) {
@@ -219,6 +219,7 @@ async function update(id, params) {
     // copy params to account and save
     Object.assign(account, params);
     account.updated = Date.now();
+
     await account.save();
 
     let changes = {};
@@ -325,9 +326,9 @@ function randomTokenString() {
 function basicDetails(account) {
     // different based on account.type or account.role
 
-    const { id, firstName, lastName, email, telephone, cellphone, street, streetNumber, postalCode,
+    const { id, avatar, firstName, lastName, email, telephone, cellphone, street, streetNumber, postalCode,
             birthday, cpf, pets, role, created, updated, isVerified } = account;
-    return { id, firstName, lastName, email, telephone, cellphone, street, streetNumber, postalCode,
+    return { id, avatar, firstName, lastName, email, telephone, cellphone, street, streetNumber, postalCode,
             birthday, cpf, pets, role, created, updated, isVerified };
 }
 

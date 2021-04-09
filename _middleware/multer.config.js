@@ -14,8 +14,9 @@ const storageTypes = {
     filename: (req, file, cb) => {
       crypto.randomBytes(16, (err, hash) => {
         if (err) cb(err);
-
-        file.key = `${hash.toString("hex")}-${file.originalname}`;
+        let fileExtension = `.${file.mimetype.split('/')[1]}`;
+        // console.log('fileExtension -->', fileExtension);
+        file.key = `${hash.toString("hex")}${fileExtension}`;
 
         cb(null, file.key);
       });
@@ -69,7 +70,6 @@ const config = {
       "image/jpeg",
       "image/pjpeg",
       "image/png",
-      "image/gif",
     ];
 
     if (allowedMimes.includes(file.mimetype)) {
@@ -82,5 +82,5 @@ const config = {
 
 module.exports = {
   uploadSingleImage,
-  config
+  config,
 };

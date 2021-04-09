@@ -49,8 +49,7 @@ async function create(params) {
         .then(_ => pet.id)
         .catch(err =>{console.log('ERRO::::', err); return err});
 
-    return pet.id;
-    
+    return {id: pet.id, avatar: pet.avatar || ''};  
 }
 
 async function update(id, params) {

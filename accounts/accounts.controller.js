@@ -26,6 +26,10 @@ const authorize = require('_middleware/authorize')
 const Role = require('_helpers/role');
 const accountService = require('./account.service');
 
+const multer = require("multer");
+const multerConfig = require("../_middleware/multer.config");
+
+
 // routes
 router.post('/authenticate', authenticateSchema, authenticate);
 router.post('/refresh-token', refreshToken);
@@ -38,8 +42,8 @@ router.post('/reset-password', resetPasswordSchema, resetPassword);
 router.get('/', authorize([Role.Admin, Role.Vet, Role.Nurse]), getAll);
 router.get('/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), getById);
 router.get('/many/:ids', authorize([Role.Admin, Role.Vet, Role.Nurse]), getManyByIds);
-router.post('/', authorize([Role.Admin, Role.Vet]), createSchema, create);
-router.put('/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), updateSchema, update);
+router.post('/', authorize([Role.Admin, Role.Vet]), createSchema, multer(multerConfig.config).single("avatar"), create);
+router.put('/:id', authorize([Role.Admin, Role.Vet, Role.Nurse]), updateSchema, multer(multerConfig.config).single("avatar"), update);
 router.delete('/:id', authorize([Role.Admin]), _delete);
 
 module.exports = router;
@@ -235,17 +239,13 @@ function createSchema(req, res, next) {
 
 function create(req, res, next) {
 
-    // console.log('1', req.body);
+    // Case a image was uploaded.
+    if (req.file && req.file.filename) {
+        req.body.avatar = req.file.filename;
+    }
 
-    // if (req.body.avatar) {
-    //     fileUploader.uploadSingleImage(req, 'avatar')
-    //     .then(imageName => req.body.avatar = imageName)
-    //     .catch(err => { console.log(err) });
-    // }
-
-    // console.log('2', req.body.avatar);
     accountService.create(req.body)
-        .then(accountId => res.json(accountId))
+        .then(accountIdAndAvatarPath => res.json(accountIdAndAvatarPath))
         .catch(next);
 }
 
@@ -284,7 +284,14 @@ function update(req, res, next) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    accountService.update(req.params.id, req.body.changes)
+    // Case a image was uploaded.
+    if (req.file && req.file.filename) {
+        req.body.avatar = req.file.filename;
+    }
+    // Multer was creating a empty property named changes.
+    delete req.body.changes;
+
+    accountService.update(req.params.id, req.body)
         .then(account => res.json(account))
         .catch(next);
 }
