@@ -42,6 +42,7 @@ app.use(
     '/images',
     express.static(path.resolve(__dirname, "images"))
 );
+
 app.use( '/chat', express.static(path.resolve(__dirname, "chat")));
 
 
@@ -85,6 +86,9 @@ io.on('connection', (socket) => {
 
     socket.emit('messageFromServer', {data: 'Welcome to server'});
 
+    socket.on("socket log", async (message) => {
+        console.log(message)
+    });
 
     socket.emit("usersOnline", getUsersOnline());
 
@@ -117,6 +121,15 @@ io.on('connection', (socket) => {
         socket.emit("fetch history", {
             id: tutor.id,
             history: history
+        });
+    });
+
+    // Signaling
+    socket.on("message", async ({message, to}) => {
+        console.log('-->', message.type)
+        socket.to(to).emit("messageResponse", {
+            message,
+            from: socket.user.id,
         });
     });
  
