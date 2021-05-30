@@ -77,10 +77,10 @@ io.use((socket, next, err) => {
 //Whenever someone connects this gets executed
 io.on('connection', (socket) => {
 
-    console.log('SOCKET ID IS', socket.id);
-    console.log('USER IS', socket.user);
-    console.log('Connections SIZE', io.of("/").sockets.size);
-    // console.log('rooms', socket.rooms);
+    const userHash = {}
+    userHash[socket.user.id] = {...socket.user, socketId: socket.id}
+
+    console.log('userHash', userHash);
 
     socket.join(socket.user.id);
 
@@ -92,10 +92,8 @@ io.on('connection', (socket) => {
 
     socket.emit("usersOnline", getUsersOnline());
 
-    socket.broadcast.emit("user connected", {
-        socketId: socket.id,
-        user: socket.user,
-    });
+    
+    socket.broadcast.emit("user connected", userHash);
 
     socket.on("private message", async ({ content, to }) => {
         console.log('-->' , to)
@@ -135,21 +133,16 @@ io.on('connection', (socket) => {
  
     //Whenever someone disconnects this piece of code executed
     socket.on('disconnect', function () {
-       console.log('A user disconnected');
-       console.log('Connections SIZE', io.of("/").sockets.size);
-       socket.broadcast.emit("user disconnected", socket.user.id);
+        socket.broadcast.emit("user disconnected", userHash);
     });
 });
 
 // Socket functions 
 
 function getUsersOnline() {
-    const usersOnline = [];
+    const usersOnline = {};
     for (let [id, socket] of io.of("/").sockets) {
-        usersOnline.push({
-            socketId: id,
-            user: socket.user,
-        });
+        usersOnline[socket.user.id] = {...socket.user, socketId: id}
     }
     return usersOnline;
 }
